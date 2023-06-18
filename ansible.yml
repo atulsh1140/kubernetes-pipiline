@@ -1,7 +1,7 @@
 - hosts: node
   become: true
   tasks:
-  - name: Delete old deployment
+  - name: Delete old deployments
     command: kubectl delete -f /home/ubuntu/Deployment.yml
   - name: delete old service
     command: kubectl delete -f /home/ubuntu/Service.yml
