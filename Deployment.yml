@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mydeployment
+  labels:
+    env: dev
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      env: dev
+  template:
+    metadata:
+      name: mypod
+      labels:
+        env: dev
+    spec:
+      containers:
+      - name: evertz01
+        volumeMounts:
+        - mountPath: /tmp
+          name: myvolume
+        image: atulsh1140/kubernetes_pipeline
+	imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 500m
+          requests:
+            cpu: 200m
+
+
+      volumes:
+      - name: myvolume
+        emptyDir:
+          sizeLimit: 10Mi
+
