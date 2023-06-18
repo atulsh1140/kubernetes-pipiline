@@ -16,8 +16,9 @@ spec:
         env: dev
     spec:
       containers:
-	 - name: evertz01
-	   image: atulsh1140/kubernetes_pipeline
-	   imagePullPolicy: Always
-           ports:
-           - containerPort: 80
+      - name: evertz01
+        image: atulsh1140/kubernetes_pipeline
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+
