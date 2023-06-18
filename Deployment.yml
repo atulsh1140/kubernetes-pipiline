@@ -16,23 +16,8 @@ spec:
         env: dev
     spec:
       containers:
-      - name: evertz01
-        volumeMounts:
-        - mountPath: /tmp
-          name: myvolume
-        image: atulsh1140/kubernetes_pipeline
-	imagePullPolicy: Always
-        ports:
-        - containerPort: 80
-        resources:
-          limits:
-            cpu: 500m
-          requests:
-            cpu: 200m
-
-
-      volumes:
-      - name: myvolume
-        emptyDir:
-          sizeLimit: 10Mi
-
+	 - name: evertz01
+	   image: atulsh1140/kubernetes_pipeline
+	   imagePullPolicy: Always
+           ports:
+           - containerPort: 80
