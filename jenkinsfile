@@ -1,0 +1,53 @@
+node {
+    stage ('Git Checkout') {
+        checkout scmGit(branches: [[name: '*/dev']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/atulsh1140/kubernetes-pipiline.git']])
+    }
+    stage ('Sending docker file to Ansible Server over ssh') {
+       sshagent(['ansible-jenkins-ssh']) {
+           sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240'
+           sh 'scp /var/lib/jenkins/workspace/kubernetes_pipeline/Dockerfile ubuntu@172.31.80.240:/home/ubuntu'
+      } 
+    }
+    stage ('Building the docker image in Ansible server'){
+        sshagent(['ansible-jenkins-ssh']){
+            sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240'
+            sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240 sudo docker image build -t $JOB_NAME:v1.$BUILD_ID -f /home/ubuntu/Dockerfile .' 
+        }
+        }
+    stage ('Tag the docker image '){
+        sshagent(['ansible-jenkins-ssh']){
+            sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240 cd /home/ubuntu'
+            sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240 sudo docker image tag $JOB_NAME:v1.$BUILD_ID atulsh1140/$JOB_NAME:v1.$BUILD_ID'
+            sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240 sudo docker image tag $JOB_NAME:v1.$BUILD_ID atulsh1140/$JOB_NAME:latest'
+    }
+    }
+    stage ("Push docker image from Ansible to DockerHub"){
+        sshagent(['ansible-jenkins-ssh']){
+            withCredentials([string(credentialsId: 'docker_hub_access', variable: 'docker_hub_access')]) {
+            sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240 sudo docker login -u atulsh1140 -p $docker_hub_access"
+            sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240 sudo docker image push atulsh1140/$JOB_NAME:v1.$BUILD_ID"
+            sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240 sudo docker image push atulsh1140/$JOB_NAME:latest"
+        }
+    }
+    stage ('Copying the deployment files to minikube server'){
+        sshagent(['minikube-server']) {
+            sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.26.116'
+            sh 'scp /var/lib/jenkins/workspace/kubernetes_pipeline/Deployment.yml ubuntu@172.31.26.116:/home/ubuntu'
+            sh 'scp /var/lib/jenkins/workspace/kubernetes_pipeline/Service.yml ubuntu@172.31.26.116:/home/ubuntu'
+    }
+    }
+    stage("Copying ansible file to ansible server"){
+        sshagent(['ansible-jenkins-ssh']){
+            sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240 cd /home/ubuntu'
+            sh 'scp /var/lib/jenkins/workspace/kubernetes_pipeline/ansible.yml ubuntu@172.31.80.240:/home/ubuntu'
+        }
+    }
+    stage ('Kubernetes deployment'){
+        sshagent(['ansible-jenkins-ssh']){
+            sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240 cd /home/ubuntu'
+            sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.80.240 ansible-playbook ansible.yml'
+        }
+        
+    }
+}
+}
